@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
-'''
+"""
 Created on Nov 30, 2015
 
 @author: jakob
-'''
+"""
 from django.dispatch.dispatcher import Signal
 
-post_unpublish = Signal(providing_args=['instance'])
+
+add_to_index = Signal(providing_args=['instance', 'object_action'])
+remove_from_index = Signal(providing_args=['instance', 'object_action'])

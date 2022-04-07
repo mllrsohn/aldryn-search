@@ -1,17 +1,43 @@
 # -*- coding: utf-8 -*-
-import django
-from cms.plugin_rendering import PluginContext
+from __future__ import unicode_literals
+
 from django.contrib.auth.models import AnonymousUser
-from django.template import RequestContext
+from django.template import Engine, RequestContext
 from django.test import RequestFactory
 from django.utils.text import smart_split
+
+from cms.toolbar.toolbar import CMSToolbar
+
+from .conf import settings
+from .utils import (
+    _get_alias_from_language_func, _get_language_from_alias_func,
+    get_field_value, strip_tags,
+)
+
+
 try:
     from django.utils.encoding import force_unicode
 except ImportError:
     from django.utils.encoding import force_text as force_unicode
 
-from .conf import settings
-from .utils import get_field_value, strip_tags
+
+EXCLUDED_PLUGINS = getattr(settings, 'ALDRYN_SEARCH_EXCLUDED_PLUGINS', [])
+
+
+get_alias_from_language = _get_alias_from_language_func()
+get_language_from_alias = _get_language_from_alias_func()
+
+
+def _render_plugin(plugin, context, renderer=None):
+    if renderer:
+        content = renderer.render_plugin(
+            instance=plugin,
+            context=context,
+            editable=False,
+        )
+    else:
+        content = plugin.render_plugin(context)
+    return content
 
 
 def get_cleaned_bits(data):
@@ -25,12 +51,11 @@ def get_plugin_index_data(base_plugin, request):
 
     instance, plugin_type = base_plugin.get_plugin_instance()
 
-    if instance is None:
-        # this is an empty plugin
+    if instance is None or instance.plugin_type in EXCLUDED_PLUGINS:
+        # this is an empty plugin or excluded from search
         return text_bits
 
     search_fields = getattr(instance, 'search_fields', [])
-
     if hasattr(instance, 'search_fulltext'):
         # check if the plugin instance has search enabled
         search_contents = instance.search_fulltext
@@ -46,11 +71,22 @@ def get_plugin_index_data(base_plugin, request):
         search_contents = not bool(search_fields)
 
     if search_contents:
-        if django.get_version() < '1.8':
-            plugin_context = RequestContext(request)
-        else:
-            plugin_context = PluginContext({'request': request}, instance, instance.placeholder)
-        plugin_contents = instance.render_plugin(context=plugin_context)
+        context = RequestContext(request)
+        updates = {}
+        engine = Engine.get_default()
+
+        for processor in engine.template_context_processors:
+            updates.update(processor(context.request))
+        context.dicts[context._processors_index] = updates
+
+        try:
+            # django-cms>=3.5
+            renderer = request.toolbar.content_renderer
+        except AttributeError:
+            # django-cms>=3.4
+            renderer = context.get('cms_content_renderer')
+
+        plugin_contents = _render_plugin(instance, context, renderer)
 
         if plugin_contents:
             text_bits = get_cleaned_bits(plugin_contents)
@@ -74,4 +110,5 @@ def get_request(language=None):
     # Needed for plugin rendering.
     request.current_page = None
     request.user = AnonymousUser()
+    request.toolbar = CMSToolbar(request)
     return request

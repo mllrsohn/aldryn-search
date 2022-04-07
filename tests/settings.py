@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-gettext = lambda s: s
 
-import os
+def gettext(s):
+    return s
+
 
 HAYSTACK_CONNECTIONS = {
     'default': {
@@ -34,9 +35,9 @@ HELPER_SETTINGS = {
     'CMS_LANGUAGES': {1: [{'code': 'en', 'name': 'English'}]},
     'LANGUAGES': (('en', 'English'),),
     'LANGUAGE_CODE': 'en',
-    #'TEMPLATE_LOADERS': ('aldryn_search.tests.FakeTemplateLoader',),
+    # 'TEMPLATE_LOADERS': ('aldryn_search.tests.FakeTemplateLoader',),
     'HAYSTACK_CONNECTIONS': HAYSTACK_CONNECTIONS,
-    'HAYSTACK_SIGNAL_PROCESSOR': 'aldryn_search.signal_processor.AldrynSignalProcessor',
+    'HAYSTACK_SIGNAL_PROCESSOR': 'aldryn_search.signal_processor.RealtimeSignalProcessor',
     'CMS_PERMISSION': True,
     'CMS_PLACEHOLDER_CONF': {
         'content': {},
@@ -69,8 +70,9 @@ HELPER_SETTINGS = {
 
 
 def run():
-    from djangocms_helper import runner
+    from app_helper import runner
     runner.cms('aldryn_search')
+
 
 if __name__ == '__main__':
     run()
