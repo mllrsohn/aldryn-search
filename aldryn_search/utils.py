@@ -4,8 +4,8 @@ from __future__ import unicode_literals
 import importlib
 import re
 
-from django.core.exceptions import ImproperlyConfigured
-from django.db import models
+from django.core.exceptions import FieldDoesNotExist, ImproperlyConfigured
+
 from django.utils.encoding import force_text
 
 from cms.utils.i18n import get_language_code
@@ -26,9 +26,13 @@ def _get_alias_from_language_func():
         try:
             func = get_callable(path_or_callable)
         except AttributeError as error:
-            raise ImproperlyConfigured('ALDRYN_SEARCH_ALIAS_FROM_LANGUAGE: %s' % (str(error)))
+            raise ImproperlyConfigured(
+                "ALDRYN_SEARCH_ALIAS_FROM_LANGUAGE: %s" % (str(error))
+            )
         if not callable(func):
-            raise ImproperlyConfigured('ALDRYN_SEARCH_ALIAS_FROM_LANGUAGE: %s is not callable' % func)
+            raise ImproperlyConfigured(
+                "ALDRYN_SEARCH_ALIAS_FROM_LANGUAGE: %s is not callable" % func
+            )
     else:
         func = alias_from_language
     return func
@@ -41,9 +45,13 @@ def _get_language_from_alias_func():
         try:
             func = get_callable(path_or_callable)
         except AttributeError as error:
-            raise ImproperlyConfigured('ALDRYN_SEARCH_LANGUAGE_FROM_ALIAS: %s' % (str(error)))
+            raise ImproperlyConfigured(
+                "ALDRYN_SEARCH_LANGUAGE_FROM_ALIAS: %s" % (str(error))
+            )
         if not callable(func):
-            raise ImproperlyConfigured('ALDRYN_SEARCH_LANGUAGE_FROM_ALIAS: %s is not callable' % func)
+            raise ImproperlyConfigured(
+                "ALDRYN_SEARCH_LANGUAGE_FROM_ALIAS: %s is not callable" % func
+            )
     else:
         func = language_from_alias
     return func
@@ -75,7 +83,7 @@ def get_callable(string_or_callable):
     if callable(string_or_callable):
         return string_or_callable
     else:
-        module_name, object_name = string_or_callable.rsplit('.', 1)
+        module_name, object_name = string_or_callable.rsplit(".", 1)
         module = importlib.import_module(module_name)
         return getattr(module, object_name)
 
@@ -85,20 +93,23 @@ def get_index_base():
     try:
         BaseClass = get_callable(index_string)
     except AttributeError as error:
-        raise ImproperlyConfigured('ALDRYN_SEARCH_INDEX_BASE_CLASS: %s' % (str(error)))
+        raise ImproperlyConfigured("ALDRYN_SEARCH_INDEX_BASE_CLASS: %s" % (str(error)))
 
     if not issubclass(BaseClass, SearchIndex):
-        exception_message = ('ALDRYN_SEARCH_INDEX_BASE_CLASS: %s is not a '
-                             'subclass of haystack.indexes.SearchIndex')
+        exception_message = (
+            "ALDRYN_SEARCH_INDEX_BASE_CLASS: %s is not a "
+            "subclass of haystack.indexes.SearchIndex"
+        )
         raise ImproperlyConfigured(exception_message % index_string)
 
-    required_fields = ['text', 'language']
+    required_fields = ["text", "language"]
 
     if not all(field in BaseClass.fields for field in required_fields):
-        exception_message = ('ALDRYN_SEARCH_INDEX_BASE_CLASS: %s must contain '
-                             'at least these fields: %s')
-        raise ImproperlyConfigured(exception_message % (index_string,
-                                                        required_fields))
+        exception_message = (
+            "ALDRYN_SEARCH_INDEX_BASE_CLASS: %s must contain "
+            "at least these fields: %s"
+        )
+        raise ImproperlyConfigured(exception_message % (index_string, required_fields))
     return BaseClass
 
 
@@ -116,21 +127,21 @@ def get_field_value(obj, name):
     Given a model instance and a field name (or attribute),
     returns the value of the field or an empty string.
     """
-    fields = name.split('__')
+    fields = name.split("__")
 
     name = fields[0]
 
     try:
         obj._meta.get_field(name)
-    except (AttributeError, models.FieldDoesNotExist):
+    except (AttributeError, FieldDoesNotExist):
         # we catch attribute error because obj will not always be a model
         # specially when going through multiple relationships.
-        value = getattr(obj, name, None) or ''
+        value = getattr(obj, name, None) or ""
     else:
         value = getattr(obj, name)
 
     if len(fields) > 1:
-        remaining = '__'.join(fields[1:])
+        remaining = "__".join(fields[1:])
         return get_field_value(value, remaining)
     return value
 
@@ -140,7 +151,7 @@ def get_model_path(model_or_string):
         # it's a model class
         app_label = model_or_string._meta.app_label
         model_name = model_or_string._meta.object_name
-        model_or_string = '{0}.{1}'.format(app_label, model_name)
+        model_or_string = "{0}.{1}".format(app_label, model_name)
     return model_or_string.lower()
 
 
@@ -151,7 +162,7 @@ def _strip_tags(value):
     whitespace in between replaced tags to make sure words are not erroneously
     concatenated.
     """
-    return re.sub(r'<[^>]*?>', ' ', force_text(value))
+    return re.sub(r"<[^>]*?>", " ", force_text(value))
 
 
 def strip_tags(value):
