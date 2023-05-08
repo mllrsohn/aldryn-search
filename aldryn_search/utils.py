@@ -6,7 +6,11 @@ import re
 
 from django.core.exceptions import FieldDoesNotExist, ImproperlyConfigured
 
-from django.utils.encoding import force_text
+try:
+    from django.utils.encoding import force_text
+except ImportError:
+    # Latest
+    from django.utils.encoding import force_str as force_text
 
 from cms.utils.i18n import get_language_code
 
