@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
+from __future__ import str_literals
 
 from django.contrib.auth.models import AnonymousUser
 from django.template import Engine, RequestContext
@@ -14,15 +14,7 @@ from .utils import (
     get_field_value, strip_tags,
 )
 
-
-try:
-    from django.utils.encoding import force_unicode
-except ImportError:
-    try:
-        from django.utils.encoding import force_text as force_unicode
-    except ImportError:
-        # Latest
-        from django.utils.encoding import force_str as force_unicode
+from django.utils.encoding import force_str
 
 EXCLUDED_PLUGINS = getattr(settings, 'ALDRYN_SEARCH_EXCLUDED_PLUGINS', [])
 
@@ -44,7 +36,7 @@ def _render_plugin(plugin, context, renderer=None):
 
 
 def get_cleaned_bits(data):
-    decoded = force_unicode(data)
+    decoded = force_str(data)
     stripped = strip_tags(decoded)
     return smart_split(stripped)
 
